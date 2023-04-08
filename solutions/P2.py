@@ -62,8 +62,8 @@ r  = 4
 def eigen_A(A:Matrix, title='A'):
   ''' sanity check A = P*D*P^(-1) and Ax = λx '''
 
-  eigenvals, eigenvecs = np.linalg.eig(A)
-  assert np.allclose(A, eigenvecs @ np.diag(eigenvals) @ np.linalg.inv(eigenvecs))
+  eigenvals, eigenvecs = npl.eig(A)
+  assert np.allclose(A, eigenvecs @ np.diag(eigenvals) @ npl.inv(eigenvecs))
 
   print(f'eigen({title}):')
   for i, lbd in enumerate(eigenvals):
@@ -77,7 +77,7 @@ def eigen_A(A:Matrix, title='A'):
 def project_q3(qstate:List[complex], is_first:bool=False) -> List[complex]:
   ''' gather all cases of ancilla qubit to be |1>, then pick out the target |q> only '''
 
-  print(np.round(qstate, 4).real)
+  #print(np.round(qstate, 4).real)
   if is_first:
     # the first |q0> is the target qubit
     return qstate[len(qstate)//2:][:2]
@@ -102,8 +102,8 @@ def transform(A:Matrix, b:Vector, meth:str='hermitian', A_r:Matrix=A12) -> Tuple
       Ar * (D / |b| * x) = b / |b|    # normalize right side b, turining it a unit vector
                   Ar * y = b_n        # rename, suits the form required by HHL_2x2 circuit
     '''
-    D = np.linalg.inv(A_r) @ A
-    b_norm = np.linalg.norm(b)
+    D = npl.inv(A_r) @ A
+    b_norm = npl.norm(b)
     b_n = b / b_norm
 
     # the validated A and b for new equation, and stats needed for inversion 
@@ -126,7 +126,7 @@ def transform(A:Matrix, b:Vector, meth:str='hermitian', A_r:Matrix=A12) -> Tuple
     else:
       A_h = A
 
-    b_norm = np.linalg.norm(b)
+    b_norm = npl.norm(b)
     b_n = b / b_norm
 
     # the validated A and b for new equation, and stats needed for inversion 
@@ -148,7 +148,7 @@ def transform_inv(y:Vector, D:Matrix, b_norm:float, meth:str='hermitian') -> Vec
                   x = D^(-1) * |b| * y
     '''
 
-    return np.linalg.inv(D) @ (b_norm * y)
+    return npl.inv(D) @ (b_norm * y)
 
   if meth == 'hermitian':
     '''
@@ -174,7 +174,7 @@ def encode_b(b:Vector, q:Qubit, gate:QGate=RY) -> QCircuit:
   if isinstance(b, list): b = np.asarray(b)
   assert isinstance(b, Vector), 'should be a Vector/np.ndarray'
   assert tuple(b.shape) == (2,), 'should be a vector lengthed 2'
-  assert (np.linalg.norm(b) - 1.0) < 1e-5, 'should be a unit vector'
+  assert (npl.norm(b) - 1.0) < 1e-5, 'should be a unit vector'
   assert gate in [RY, U3]
 
   if gate is RY:
@@ -195,7 +195,7 @@ def encode_b(b:Vector, q:Qubit, gate:QGate=RY) -> QCircuit:
 
   return cq
 
-def encode_A(A:Matrix, q:Qubit, theta:float=t0/r, k:float=0, encoder=QOracle) -> Union[QGate, QCircuit]:
+def encode_A(A:Matrix, q:Qubit, theta:float=t0, k:float=0, encoder=QOracle) -> Union[QGate, QCircuit]:
   ''' Unitary generator encode hermitian A to a unitary up to power of 2: U^2^k = exp(iAθ)^2^k '''
   assert isinstance(A, Matrix), 'should be a Matrix/np.ndarray'
   assert tuple(A.shape) == (2, 2), 'should be a 2x2 matrix'
@@ -225,7 +225,7 @@ def HHL_2x2_cao13(A:Matrix=A12, b:Vector=b1) -> QCircuit:
 
   if CHECK:
     assert any([A is someA for someA in [A12, A13, A23]]), 'A should be chosen from [A12, A13, A23]'
-    assert (np.linalg.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
+    assert (npl.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
 
   # q0: perform RY to inverse λi
   # q1~q2: QPE scatter A => Σ|λi>, λi is integer approx to eigvals of A
@@ -274,7 +274,7 @@ def HHL_2x2_cao13_qiskit(A:Matrix=A12, b:Vector=b1) -> QCircuit:
 
   if CHECK:
     assert any([A is someA for someA in [A12, A13]]), 'A should be chosen from [A12, A13]'
-    assert (np.linalg.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
+    assert (npl.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
 
   # q0: perform RY to inverse λi
   # q1~q2: QPE scatter A => Σ|λi>, λi is integer approx to eigvals of A
@@ -319,7 +319,7 @@ def HHL_2x2_cao13_qiskit_corrected(A:Matrix=A12, b:Vector=b1) -> QCircuit:
 
   if CHECK:
     assert any([A is someA for someA in [A12, A13]]), 'A should be chosen from [A12, A13]'
-    assert (np.linalg.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
+    assert (npl.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
 
   # q0: perform RY to inverse λi
   # q1~q2: QPE scatter A => Σ|λi>, λi is integer approx to eigvals of A
@@ -357,7 +357,7 @@ def HHL_2x2_pan13(A:Matrix=A12, b:Vector=b1) -> QCircuit:
 
   if CHECK:
     assert A is A12, 'A must be A12'
-    assert (np.linalg.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
+    assert (npl.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
 
   # q0: perform RY to inverse λi
   # q1~q2: QPE scatter A => Σ|λi>, λi is integer approx to eigvals of A
@@ -458,7 +458,7 @@ def HHL_2x2_zaman23(A:Matrix=Ah, b:Vector=bp) -> QCircuit:
 
   return enc_b << pse << cr << pse.dagger()
 
-def HHL_2x2_qpanda(A:Matrix=A12, b:Vector=bp, ver:str='QPanda-dump-4') -> QCircuit:
+def HHL_2x2_qpanda(A:Matrix=A12, b:Vector=bp, ver:str='QPanda-dump-5') -> QCircuit:
   '''
     The implementations from QPanda:
       - #ba0b08f4fb86a955bee2607045bd5130523e604c init~       toy implementation accepting no inputs, maybe solving `A12 x = b0`
@@ -706,7 +706,7 @@ def HHL_2x2_final(A:Matrix=A12, b:Vector=b1) -> QCircuit:
 
   if CHECK:
     assert np.allclose(A, A.conj().T), 'A should be a hermitian'
-    assert (np.linalg.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
+    assert (npl.norm(b) - 1.0) < 1e-5, 'b should be a unit vector'
 
   # q0: perform RY to inverse λi
   # q1~q2: QPE scatter A => Σ|λi>, λi is integer approx to eigvals of A
@@ -728,22 +728,26 @@ def HHL_2x2_final(A:Matrix=A12, b:Vector=b1) -> QCircuit:
       << CR(q1, q2, pi/2).dagger() \
       << H(q2)
 
-  if 'debug QPE':
+  if not 'debug QPE':
     qvm.directly_run(QProg() << enc_b << qpe)
     print(np.round(qvm.get_qstate(), 4).real)
 
   # Step 3: controled-Y rotate θj = 2*arcsin(C/λi) ≈ 2*C/λi; 2^(1-r)*pi = 2*C
+  # NOTE: the rotation angles are accordingly esitimated by eigvals of A
+  # note that RY(θ)|1> = [    // the more θ it rotates, the more away from |1> and shifts to |0>
+  #   -sin(θ/2),
+  #    cos(θ/2),
+  # ]
+  eigenvals, eigenvecs = npl.eig(A)
+  lbd1, lbd2 = sorted(eigenvals)
+  C = lbd1        # C is a normalizer being C <= min(λi)
+  # we starts ancilla qubit from |1>, so add a sign to rotation angle θj
   cr = QCircuit() \
-      << X([q1]) \
-      << RY(q0, pi).control([q1, q2]) \
-      << X([q2]) \
-      << RY(q0, pi/3).control([q1, q2]) \
-      << X([q2]) \
-      << RY(q0, -pi/3).control([q1, q2]) \
-      << X([q1]) \
-      << RY(q0, -pi).control([q1, q2])
+      << X(q0) \
+      << RY(q0, -2*np.arcsin(C/lbd1)).control(q1) \
+      << RY(q0, -2*np.arcsin(C/lbd2)).control(q2)
 
-  if 'debug rotate':
+  if not 'debug rotate':
     qvm.directly_run(QProg() << enc_b << qpe << cr)
     print(np.round(qvm.get_qstate(), 4).real)
 
@@ -786,8 +790,8 @@ def HHL(A:Matrix, b:Vector, HHL_cq:Callable, meth:str='hermitian', prt_ircode=Fa
       print('D:')  ; print(D)
       print('b_norm:', b_norm)
 
-    x_hat = np.linalg.solve(A,  b)      # answer of original equation
-    y_hat = np.linalg.solve(Ar, b_n)    # answer of transformed equation
+    x_hat = npl.solve(A,  b)      # answer of original equation
+    y_hat = npl.solve(Ar, b_n)    # answer of transformed equation
 
   # Step 2: solving Ar * y = b_n in a quantum manner
   global qvm
@@ -830,8 +834,8 @@ def question1() -> Tuple[list, str]:
 
 def go(A:Matrix, b:Vector, HHL_cq:Callable=HHL_2x2_cao13, meth:str='hermitian'):
   try:
-    z = np.linalg.solve(A, b)
-  except np.linalg.LinAlgError:   # ignore bad rand case if singular
+    z = npl.solve(A, b)
+  except npl.LinAlgError:   # ignore bad rand case if singular
     return
 
   x, _ = HHL(A, b, HHL_cq, meth=meth)
@@ -839,8 +843,8 @@ def go(A:Matrix, b:Vector, HHL_cq:Callable=HHL_2x2_cao13, meth:str='hermitian'):
   print('  truth:', z)
 
   if not 'show normed':
-    print('  n_solut:', x / np.linalg.norm(x))
-    print('  n_truth:', z / np.linalg.norm(z))
+    print('  n_solut:', x / npl.norm(x))
+    print('  n_truth:', z / npl.norm(z))
 
 
 def benchmark(kind:str, eps=1e-2):
@@ -859,16 +863,16 @@ def benchmark(kind:str, eps=1e-2):
     else: raise ValueError
 
     try:
-      z = np.linalg.solve(A_, b_)
-      z_n = z / np.linalg.norm(z)
-    except np.linalg.LinAlgError:
+      z = npl.solve(A_, b_)
+      z_n = z / npl.norm(z)
+    except npl.LinAlgError:
       continue
 
     for i, name in enumerate(circuits):
       x, _ = HHL(A_, b_, globals()[name])
-      v_errors[i] += np.linalg.norm(np.abs(z - np.asarray(x)))
-      x_n = x / np.linalg.norm(x)
-      n_errors[i] += np.linalg.norm(np.abs(z_n - x_n))
+      v_errors[i] += npl.norm(np.abs(z - np.asarray(x)))
+      x_n = x / npl.norm(x)
+      n_errors[i] += npl.norm(np.abs(z_n - x_n))
   
   for i, name in enumerate(circuits):
     print(f'{name}: {v_errors[i]} / {n_errors[i]}') 
@@ -881,7 +885,7 @@ if __name__ == '__main__':
     q = qvm.qAlloc()
     for _ in range(10):
       b = np.random.uniform(size=[2], low=-1.0, high=1.0)
-      b /= np.linalg.norm(b)
+      b /= npl.norm(b)
       encode_b(b, q)
     # qvm.qFree(q)    # FIXME: buggy, stucks to SEGV
     qvm.finalize()
@@ -898,8 +902,6 @@ if __name__ == '__main__':
     print(name)
     go(A, b, globals()[name], meth='hermitian')
 
-  exit()
-
   HHL_cq = HHL_2x2_final
   DEBUG = False
 
@@ -915,7 +917,7 @@ if __name__ == '__main__':
     go(A, b, HHL_cq)
 
   # benchmark different circuits
-  print('[benchmark random]')
+  print('[benchmark random] error:')
   benchmark(kind='random')
-  print('[benchmark target]')
+  print('[benchmark target] error:')
   benchmark(kind='target', eps=1e-2)
